@@ -10,6 +10,8 @@ import {
   type BanditGameTrial, type InsertBanditGameTrial,
   type EegCognitiveProfile, type InsertEegCognitiveProfile
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, asc, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Profile methods
@@ -522,4 +524,298 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Create DatabaseStorage implementation
+export class DatabaseStorage implements IStorage {
+  // Profile methods
+  async getProfile(id: number): Promise<Profile | undefined> {
+    const [profile] = await db.select().from(profiles).where(eq(profiles.id, id));
+    return profile || undefined;
+  }
+
+  async getAllProfiles(): Promise<Profile[]> {
+    return db.select().from(profiles);
+  }
+
+  async createProfile(profile: InsertProfile): Promise<Profile> {
+    const [newProfile] = await db.insert(profiles).values(profile).returning();
+    return newProfile;
+  }
+
+  async deleteProfile(id: number): Promise<void> {
+    await db.delete(profiles).where(eq(profiles.id, id));
+  }
+
+  // Photo methods
+  async getPhoto(id: number): Promise<Photo | undefined> {
+    const [photo] = await db.select().from(photos).where(eq(photos.id, id));
+    return photo || undefined;
+  }
+
+  async getAllPhotos(): Promise<Photo[]> {
+    return db.select().from(photos);
+  }
+
+  async getPhotosByProfileId(profileId: number): Promise<Photo[]> {
+    return db.select().from(photos).where(eq(photos.profileId, profileId));
+  }
+
+  async createPhoto(photo: InsertPhoto): Promise<Photo> {
+    const [newPhoto] = await db.insert(photos).values({
+      ...photo,
+      relationship: photo.relationship || null,
+      memoryNotes: photo.memoryNotes || null,
+      place: photo.place || null
+    }).returning();
+    return newPhoto;
+  }
+
+  async deletePhoto(id: number): Promise<void> {
+    await db.delete(photos).where(eq(photos.id, id));
+  }
+
+  // Game Session methods
+  async getGameSession(id: number): Promise<GameSession | undefined> {
+    const [session] = await db.select().from(gameSessions).where(eq(gameSessions.id, id));
+    return session || undefined;
+  }
+
+  async getAllGameSessions(): Promise<GameSession[]> {
+    return db.select().from(gameSessions);
+  }
+
+  async getGameSessionsByProfileId(profileId: number): Promise<GameSession[]> {
+    return db.select().from(gameSessions).where(eq(gameSessions.profileId, profileId));
+  }
+
+  async createGameSession(session: InsertGameSession): Promise<GameSession> {
+    const [newSession] = await db.insert(gameSessions).values(session).returning();
+    return newSession;
+  }
+
+  async endGameSession(id: number): Promise<GameSession> {
+    const [updatedSession] = await db
+      .update(gameSessions)
+      .set({ endedAt: new Date() })
+      .where(eq(gameSessions.id, id))
+      .returning();
+    return updatedSession;
+  }
+
+  async recordGameAnswer(id: number, correct: boolean): Promise<GameSession> {
+    const session = await this.getGameSession(id);
+    if (!session) throw new Error("Game session not found");
+    
+    const [updatedSession] = await db
+      .update(gameSessions)
+      .set({
+        totalQuestions: (session.totalQuestions || 0) + 1,
+        correctAnswers: (session.correctAnswers || 0) + (correct ? 1 : 0)
+      })
+      .where(eq(gameSessions.id, id))
+      .returning();
+    return updatedSession;
+  }
+
+  async updateGameSessionEeg(id: number, attention: number, relaxation: number): Promise<GameSession> {
+    const session = await this.getGameSession(id);
+    if (!session) throw new Error("Game session not found");
+    
+    const [updatedSession] = await db
+      .update(gameSessions)
+      .set({
+        avgEegAttention: attention,
+        avgEegRelaxation: relaxation
+      })
+      .where(eq(gameSessions.id, id))
+      .returning();
+    return updatedSession;
+  }
+
+  // Chat Message methods
+  async getChatMessage(id: number): Promise<ChatMessage | undefined> {
+    const [message] = await db.select().from(chatMessages).where(eq(chatMessages.id, id));
+    return message || undefined;
+  }
+
+  async getChatMessages(sessionId?: number, photoId?: number): Promise<ChatMessage[]> {
+    let query = db.select().from(chatMessages);
+    
+    if (sessionId) {
+      query = query.where(eq(chatMessages.sessionId, sessionId));
+    }
+    
+    if (photoId) {
+      query = query.where(eq(chatMessages.photoId, photoId));
+    }
+    
+    return query.orderBy(asc(chatMessages.createdAt));
+  }
+
+  async getChatMessagesByProfileId(profileId: number): Promise<ChatMessage[]> {
+    return db.select().from(chatMessages).where(eq(chatMessages.profileId, profileId));
+  }
+
+  async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
+    const [newMessage] = await db.insert(chatMessages).values({
+      ...message,
+      photoId: message.photoId || null,
+      sessionId: message.sessionId || null
+    }).returning();
+    return newMessage;
+  }
+
+  // EEG Reading methods
+  async getEegReading(id: number): Promise<EegReading | undefined> {
+    const [reading] = await db.select().from(eegReadings).where(eq(eegReadings.id, id));
+    return reading || undefined;
+  }
+
+  async getAllEegReadings(): Promise<EegReading[]> {
+    return db.select().from(eegReadings);
+  }
+
+  async getEegReadingsByProfileId(profileId: number): Promise<EegReading[]> {
+    return db.select().from(eegReadings).where(eq(eegReadings.profileId, profileId));
+  }
+
+  async getEegReadingsBySessionId(sessionId: number): Promise<EegReading[]> {
+    return db.select().from(eegReadings).where(eq(eegReadings.sessionId, sessionId));
+  }
+
+  async createEegReading(reading: InsertEegReading): Promise<EegReading> {
+    const [newReading] = await db.insert(eegReadings).values(reading).returning();
+    return newReading;
+  }
+
+  // Bandit Game Session methods
+  async getBanditGameSession(id: number): Promise<BanditGameSession | undefined> {
+    const [session] = await db.select().from(banditGameSessions).where(eq(banditGameSessions.id, id));
+    return session || undefined;
+  }
+
+  async getAllBanditGameSessions(): Promise<BanditGameSession[]> {
+    return db.select().from(banditGameSessions);
+  }
+
+  async getBanditGameSessionsByProfileId(profileId: number): Promise<BanditGameSession[]> {
+    return db.select().from(banditGameSessions).where(eq(banditGameSessions.profileId, profileId));
+  }
+
+  async createBanditGameSession(session: InsertBanditGameSession): Promise<BanditGameSession> {
+    const [newSession] = await db.insert(banditGameSessions).values(session).returning();
+    return newSession;
+  }
+
+  async endBanditGameSession(id: number): Promise<BanditGameSession> {
+    const [updatedSession] = await db
+      .update(banditGameSessions)
+      .set({ endedAt: new Date() })
+      .where(eq(banditGameSessions.id, id))
+      .returning();
+    return updatedSession;
+  }
+
+  async updateBanditGameSessionStats(id: number): Promise<BanditGameSession> {
+    // Get the session
+    const session = await this.getBanditGameSession(id);
+    if (!session) throw new Error("Bandit game session not found");
+    
+    // Get all trials for this session
+    const trials = await this.getBanditGameTrialsBySessionId(id);
+    if (trials.length === 0) return session;
+    
+    // Calculate statistics
+    const totalTrials = trials.length;
+    
+    // For optimal choices, we'd need to know the best arm
+    // For simplicity, we'll assume arm 2 is optimal (as in our UI it has 0.7 probability)
+    const optimalArm = 2;
+    const optimalChoices = trials.filter(t => t.choice === optimalArm).length;
+    
+    // Calculate exploration rate (how many different arms were tried)
+    const uniqueArms = new Set(trials.map(t => t.choice)).size;
+    const explorationRate = Math.round((uniqueArms / 3) * 100); // 3 is total possible arms
+    
+    // Simplified learning rate calculation
+    // Compare first half vs second half optimal choices
+    const halfIndex = Math.floor(trials.length / 2);
+    const firstHalf = trials.slice(0, halfIndex);
+    const secondHalf = trials.slice(halfIndex);
+    
+    const firstHalfOptimal = firstHalf.filter(t => t.choice === optimalArm).length / firstHalf.length;
+    const secondHalfOptimal = secondHalf.filter(t => t.choice === optimalArm).length / secondHalf.length;
+    const learningRate = Math.round(Math.max(0, secondHalfOptimal - firstHalfOptimal) * 100);
+    
+    // Calculate average response time
+    const avgResponseTime = Math.round(
+      trials.reduce((sum, trial) => sum + trial.responseTime, 0) / trials.length
+    );
+    
+    // Update the session with calculated stats
+    const [updatedSession] = await db
+      .update(banditGameSessions)
+      .set({
+        totalTrials,
+        optimalChoices,
+        explorationRate,
+        learningRate,
+        avgResponseTime,
+        // Simple correlation with EEG data - placeholder for actual ML model
+        eegCorrelation: 50 
+      })
+      .where(eq(banditGameSessions.id, id))
+      .returning();
+    
+    return updatedSession;
+  }
+
+  // Bandit Game Trial methods
+  async getBanditGameTrial(id: number): Promise<BanditGameTrial | undefined> {
+    const [trial] = await db.select().from(banditGameTrials).where(eq(banditGameTrials.id, id));
+    return trial || undefined;
+  }
+
+  async getBanditGameTrialsBySessionId(sessionId: number): Promise<BanditGameTrial[]> {
+    return db.select().from(banditGameTrials).where(eq(banditGameTrials.sessionId, sessionId));
+  }
+
+  async createBanditGameTrial(trial: InsertBanditGameTrial): Promise<BanditGameTrial> {
+    const [newTrial] = await db.insert(banditGameTrials).values(trial).returning();
+    return newTrial;
+  }
+
+  // EEG Cognitive Profile methods
+  async getEegCognitiveProfile(id: number): Promise<EegCognitiveProfile | undefined> {
+    const [profile] = await db.select().from(eegCognitiveProfiles).where(eq(eegCognitiveProfiles.id, id));
+    return profile || undefined;
+  }
+
+  async getLatestEegCognitiveProfileByProfileId(profileId: number): Promise<EegCognitiveProfile | undefined> {
+    const [profile] = await db
+      .select()
+      .from(eegCognitiveProfiles)
+      .where(eq(eegCognitiveProfiles.profileId, profileId))
+      .orderBy(desc(eegCognitiveProfiles.timestamp))
+      .limit(1);
+    
+    return profile || undefined;
+  }
+
+  async getAllEegCognitiveProfiles(): Promise<EegCognitiveProfile[]> {
+    return db.select().from(eegCognitiveProfiles);
+  }
+
+  async getEegCognitiveProfilesByProfileId(profileId: number): Promise<EegCognitiveProfile[]> {
+    return db.select().from(eegCognitiveProfiles).where(eq(eegCognitiveProfiles.profileId, profileId));
+  }
+
+  async createEegCognitiveProfile(profile: InsertEegCognitiveProfile): Promise<EegCognitiveProfile> {
+    const [newProfile] = await db.insert(eegCognitiveProfiles).values({
+      ...profile,
+      featureImportance: profile.featureImportance || {}
+    }).returning();
+    return newProfile;
+  }
+}
+
+export const storage = new DatabaseStorage();
