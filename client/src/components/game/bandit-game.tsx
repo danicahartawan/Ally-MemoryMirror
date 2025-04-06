@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -9,7 +9,8 @@ import { useEegSimulator } from '@/lib/eeg-simulator';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest, getQueryFn } from '@/lib/queryClient';
-import { BrainCircuit, Coins, BarChart3, Award } from 'lucide-react';
+import { BrainCircuit, Coins, BarChart3, Award, Brain, AlertCircle, BatteryLow, Coffee } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type BanditArm = {
   id: number;
@@ -43,18 +44,111 @@ export default function BanditGame() {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [gameTab, setGameTab] = useState<string>('game');
   const [isGameEnded, setIsGameEnded] = useState(false);
+  
+  // Game adaptation parameters based on EEG
+  const [transitionDelay, setTransitionDelay] = useState(300); // ms between state changes
+  const [visualFeedbackIntensity, setVisualFeedbackIntensity] = useState(1); // 1-3 scale
+  const [rewardVolatility, setRewardVolatility] = useState(1); // 0.5-1.5 scale
+  const [explorationBoost, setExplorationBoost] = useState(0); // 0-0.3 boost to exploration
+  const [showBreakPrompt, setShowBreakPrompt] = useState(false);
+  const [simplifiedUI, setSimplifiedUI] = useState(false);
+  
+  // EEG pattern detection
+  const eegState = useMemo(() => {
+    // Default state
+    let state = "normal";
+    
+    // Check if the EEG contains all necessary data points
+    if (!eegData?.theta || !eegData?.alpha || !eegData?.beta || !eegData?.blinkRate) {
+      return state;
+    }
+    
+    // 1. Overloaded / distracted: High theta/alpha ratio
+    const thetaAlphaRatio = eegData.theta / Math.max(1, eegData.alpha);
+    if (thetaAlphaRatio > 1.3) {
+      state = "overloaded";
+    }
+    
+    // 2. Stress / agitation: High beta
+    if (eegData.beta > 70) {
+      state = "stressed";
+    }
+    
+    // 3. Fatigue: Low alpha and high blink rate
+    if (eegData.alpha < 30 && eegData.blinkRate > 60) {
+      state = "fatigued";
+    }
+    
+    // 4. Calm engagement: Balanced alpha/beta
+    const alphaBetaRatio = eegData.alpha / Math.max(1, eegData.beta);
+    if (alphaBetaRatio > 0.8 && alphaBetaRatio < 1.2) {
+      state = "engaged";
+    }
+    
+    return state;
+  }, [eegData]);
+  
+  // Adapt the game based on EEG state
+  useEffect(() => {
+    if (!gameSessionId) return; // Only adapt when game is active
+    
+    switch (eegState) {
+      case "overloaded":
+        // Increase reward salience, simplify UI
+        setVisualFeedbackIntensity(3);
+        setSimplifiedUI(true);
+        break;
+      
+      case "stressed":
+        // Slow down transitions, soft prompts
+        setTransitionDelay(1000); // Slower transitions
+        // Soft prompts will be handled in the UI with conditional rendering
+        break;
+        
+      case "fatigued":
+        // Suggest a break, reduce reward volatility
+        setShowBreakPrompt(true);
+        setRewardVolatility(0.5);
+        break;
+        
+      case "engaged":
+        // Increase difficulty with exploration incentives
+        setExplorationBoost(0.2);
+        break;
+        
+      default: // "normal"
+        // Reset to defaults
+        setTransitionDelay(300);
+        setVisualFeedbackIntensity(1);
+        setRewardVolatility(1);
+        setExplorationBoost(0);
+        setShowBreakPrompt(false);
+        setSimplifiedUI(false);
+    }
+  }, [eegState, gameSessionId]);
 
   // Get reward probabilities - in a real implementation, these would be dynamic based on
   // the patient's cognitive state and would be generated from the backend
   const rewardProbabilities = [0.3, 0.5, 0.7];
 
+  type BanditGameSessionResponse = {
+    id: number;
+    totalTrials?: number;
+    optimalChoices?: number;
+    learningRate?: number;
+    explorationRate?: number;
+    avgResponseTime?: number;
+  };
+
   // Start a game session
-  const startSessionMutation = useMutation({
+  const startSessionMutation = useMutation<BanditGameSessionResponse>({
     mutationFn: async () => {
       if (!selectedProfile) throw new Error("No profile selected");
-      return apiRequest('/api/bandit-game-sessions', 'POST', { profileId: selectedProfile.id });
+      const response = await apiRequest('/api/bandit-game-sessions', 'POST', { profileId: selectedProfile.id });
+      // Type assertion pattern to safely cast to the required type
+      return response as unknown as BanditGameSessionResponse;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: BanditGameSessionResponse) => {
       setGameSessionId(data.id);
       resetGame();
       toast({
@@ -82,16 +176,18 @@ export default function BanditGame() {
   });
 
   // End a game session
-  const endSessionMutation = useMutation({
+  const endSessionMutation = useMutation<BanditGameSessionResponse>({
     mutationFn: async () => {
       if (!gameSessionId) throw new Error("No active game session");
-      return apiRequest(`/api/bandit-game-sessions/${gameSessionId}/end`, 'PATCH');
+      const response = await apiRequest(`/api/bandit-game-sessions/${gameSessionId}/end`, 'PATCH');
+      // Type assertion pattern to safely cast to the required type
+      return response as unknown as BanditGameSessionResponse;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: BanditGameSessionResponse) => {
       setIsGameEnded(true);
       toast({
         title: "Game Complete",
-        description: `You completed ${data.totalTrials} trials with ${data.optimalChoices} optimal choices.`,
+        description: `You completed ${data.totalTrials || 0} trials with ${data.optimalChoices || 0} optimal choices.`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/bandit-game-sessions'] });
       
@@ -101,7 +197,7 @@ export default function BanditGame() {
   });
 
   // Get session stats
-  const { data: sessionStats } = useQuery({
+  const { data: sessionStats = {} as BanditGameSessionResponse } = useQuery<BanditGameSessionResponse>({
     queryKey: ['/api/bandit-game-sessions', gameSessionId, 'stats'],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!gameSessionId && isGameEnded,
@@ -262,23 +358,70 @@ export default function BanditGame() {
   // Display different arms with different probabilities of reward
   const renderArms = () => {
     return BANDIT_ARMS.map(arm => {
-      // Decide whether to show exploitation choice or random (exploration) choice
-      const shouldExploit = Math.random() > EXPLORATION_RATE;
+      // Apply EEG-based adaptations to game mechanics
+      const effectiveExplorationRate = Math.max(0, Math.min(1, EXPLORATION_RATE - explorationBoost));
+      const shouldExploit = Math.random() > effectiveExplorationRate;
+      
+      // Apply reward volatility adaptation
+      const adjustedProbabilities = rewardProbabilities.map(p => 
+        Math.max(0.1, Math.min(0.9, p * rewardVolatility))
+      );
+      
       const bestArm = qValues.indexOf(Math.max(...qValues));
       const highlighted = shouldExploit && arm.id === bestArm;
+      
+      // Apply visual feedback intensity
+      let highlightClasses = '';
+      let animationClass = '';
+      
+      if (highlighted) {
+        // Base highlighting
+        highlightClasses = 'ring-4 ring-yellow-400';
+        
+        // Intensify based on EEG state
+        if (visualFeedbackIntensity >= 2) {
+          highlightClasses += ' ring-offset-2';
+          animationClass = 'animate-pulse';
+        }
+        if (visualFeedbackIntensity >= 3) {
+          highlightClasses += ' shadow-lg shadow-yellow-200';
+          animationClass = 'animate-bounce';
+        }
+      }
+      
+      // Apply UI simplification if needed
+      const buttonSize = simplifiedUI ? 'h-44 w-32' : 'h-40 w-28';
+      const fontSize = simplifiedUI ? 'text-3xl' : 'text-2xl';
+      const iconSize = simplifiedUI ? 'text-5xl' : 'text-4xl';
+      
+      // Apply transition delay based on EEG state
+      const transitionStyle = {
+        transition: `all ${transitionDelay}ms ease-in-out`
+      };
 
       return (
         <Button
           key={arm.id}
           onClick={() => selectArm(arm.id)}
           disabled={currentTrial > maxTrials || !gameSessionId}
-          className={`h-40 w-28 text-center flex flex-col items-center justify-center text-2xl 
-            ${highlighted ? 'ring-4 ring-yellow-400 animate-pulse' : ''}`}
+          className={`${buttonSize} ${fontSize} text-center flex flex-col items-center justify-center 
+            ${highlightClasses} ${animationClass}`}
+          style={transitionStyle}
           variant="outline"
         >
-          <div className="text-4xl mb-2">{arm.icon}</div>
+          <div className={`${iconSize} mb-2`}>{arm.icon}</div>
           <div>{arm.name}</div>
-          {highlighted && <Badge className="mt-2 bg-yellow-500">Recommended</Badge>}
+          {highlighted && (
+            <Badge 
+              className={`mt-2 ${
+                visualFeedbackIntensity >= 3 ? 'bg-yellow-500 text-lg px-3 py-1' : 
+                visualFeedbackIntensity >= 2 ? 'bg-yellow-500 text-base' : 
+                'bg-yellow-500'
+              }`}
+            >
+              {simplifiedUI ? 'PICK ME!' : 'Recommended'}
+            </Badge>
+          )}
         </Button>
       );
     });
@@ -287,6 +430,16 @@ export default function BanditGame() {
   // Render game results and stats
   const renderResults = () => {
     if (!sessionStats) return <div>Loading results...</div>;
+    
+    // Default values for stats
+    const optimalChoices = sessionStats.optimalChoices || 0;
+    const totalTrials = sessionStats.totalTrials || 0;
+    const learningRate = sessionStats.learningRate || 0;
+    const explorationRate = sessionStats.explorationRate || 0;
+    const avgResponseTime = sessionStats.avgResponseTime || 0;
+    
+    // Calculate percentage for optimal choices
+    const optimalPercentage = totalTrials > 0 ? (optimalChoices / totalTrials) * 100 : 0;
     
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -311,9 +464,9 @@ export default function BanditGame() {
             <div className="mt-4">
               <div className="flex justify-between mb-1">
                 <span>Optimal Choices</span>
-                <span>{sessionStats.optimalChoices} / {sessionStats.totalTrials}</span>
+                <span>{optimalChoices} / {totalTrials}</span>
               </div>
-              <Progress value={(sessionStats.optimalChoices / sessionStats.totalTrials) * 100} />
+              <Progress value={optimalPercentage} />
             </div>
           </CardContent>
         </Card>
@@ -329,24 +482,24 @@ export default function BanditGame() {
               <div>
                 <div className="flex justify-between mb-1">
                   <span>Learning Rate</span>
-                  <span>{sessionStats.learningRate}%</span>
+                  <span>{learningRate}%</span>
                 </div>
-                <Progress value={sessionStats.learningRate} />
+                <Progress value={learningRate} />
               </div>
               <div>
                 <div className="flex justify-between mb-1">
                   <span>Exploration Rate</span>
-                  <span>{sessionStats.explorationRate}%</span>
+                  <span>{explorationRate}%</span>
                 </div>
-                <Progress value={sessionStats.explorationRate} />
+                <Progress value={explorationRate} />
               </div>
               <div>
                 <div className="flex justify-between mb-1">
                   <span>Response Time</span>
-                  <span>{sessionStats.avgResponseTime}ms</span>
+                  <span>{avgResponseTime}ms</span>
                 </div>
                 <Progress 
-                  value={Math.min(100, (3000 - sessionStats.avgResponseTime) / 30)} 
+                  value={Math.min(100, (3000 - avgResponseTime) / 30)} 
                 />
               </div>
             </div>
@@ -402,8 +555,53 @@ export default function BanditGame() {
         </TabsList>
         
         <TabsContent value="game">
+          {/* EEG State Alerts */}
+          {showBreakPrompt && (
+            <Alert className="mb-4 bg-blue-50 border-blue-200">
+              <Coffee className="h-4 w-4" />
+              <AlertTitle>Fatigue Detected</AlertTitle>
+              <AlertDescription>
+                Taking short breaks can improve memory recall. Consider a brief rest before continuing.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {eegState === "stressed" && (
+            <Alert className="mb-4 bg-orange-50 border-orange-200">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Stress Level Elevated</AlertTitle>
+              <AlertDescription>
+                Take a deep breath. The game will slow down to make choices easier.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {eegState === "overloaded" && (
+            <Alert className="mb-4 bg-indigo-50 border-indigo-200">
+              <Brain className="h-4 w-4" />
+              <AlertTitle>Cognitive Load High</AlertTitle>
+              <AlertDescription>
+                Interface simplified to help you focus on essential information.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <Card>
             <CardContent className="pt-6">
+              {/* EEG State Indicator */}
+              {gameSessionId && eegData && (
+                <div className="mb-4 flex items-center justify-center">
+                  <div className="bg-gray-100 rounded-full px-4 py-1 flex items-center space-x-2">
+                    <span className="font-medium">Brain State:</span>
+                    {eegState === "normal" && <Badge className="bg-green-500">Normal</Badge>}
+                    {eegState === "engaged" && <Badge className="bg-blue-500">Engaged</Badge>}
+                    {eegState === "overloaded" && <Badge className="bg-indigo-500">Overloaded</Badge>}
+                    {eegState === "stressed" && <Badge className="bg-orange-500">Stressed</Badge>}
+                    {eegState === "fatigued" && <Badge className="bg-yellow-500">Fatigued</Badge>}
+                  </div>
+                </div>
+              )}
+              
               <div className="flex justify-center space-x-6 mb-6">
                 {renderArms()}
               </div>
@@ -416,6 +614,12 @@ export default function BanditGame() {
                   <div className="text-sm text-gray-500">
                     <div>Attention: {eegData.attention}%</div>
                     <div>Recognition: {eegData.recognition}%</div>
+                    {!simplifiedUI && (
+                      <>
+                        <div>Alpha/Beta: {(eegData.alpha / Math.max(1, eegData.beta)).toFixed(2)}</div>
+                        <div>Theta/Alpha: {(eegData.theta / Math.max(1, eegData.alpha)).toFixed(2)}</div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

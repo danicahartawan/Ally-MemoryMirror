@@ -6,6 +6,10 @@ export type EegData = {
   relaxation: number;   // 0-100
   stress: number;       // 0-100
   recognition: number;  // 0-100
+  theta: number;        // 0-100 (brainwave band power)
+  alpha: number;        // 0-100 (brainwave band power)
+  beta: number;         // 0-100 (brainwave band power)
+  blinkRate: number;    // 0-100 (blinks per minute normalized)
 };
 
 // Initial EEG data
@@ -14,6 +18,10 @@ const initialEegData: EegData = {
   relaxation: 60,
   stress: 20,
   recognition: 40,
+  theta: 40,
+  alpha: 50,
+  beta: 30,
+  blinkRate: 20,
 };
 
 // Global simulation state
@@ -41,6 +49,10 @@ const startSimulation = () => {
       relaxation: fluctuate(currentEegData.relaxation),
       stress: fluctuate(currentEegData.stress),
       recognition: fluctuate(currentEegData.recognition),
+      theta: fluctuate(currentEegData.theta),
+      alpha: fluctuate(currentEegData.alpha),
+      beta: fluctuate(currentEegData.beta),
+      blinkRate: fluctuate(currentEegData.blinkRate),
     };
     
     // Notify all listeners
