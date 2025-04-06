@@ -409,24 +409,19 @@ export default function BanditGame() {
       return;
     }
     
-    // Initialize start time if it's the first click
-    if (!startTime) {
-      setStartTime(Date.now());
-      toast({
-        title: "Arm selected",
-        description: `You've selected the ${BANDIT_ARMS[armIndex].name} arm. Click again to pull it.`,
-      });
-      return;
-    }
-    
-    const endTime = Date.now();
-    const rt = endTime - startTime;
-    setResponseTime(rt);
-    setStartTime(null);
-    
-    // Get reward based on probability
+    // Get reward based on probability - simplified to work in a single click
     const rewardProb = rewardProbabilities[armIndex];
     const reward = Math.random() < rewardProb ? 1 : 0;
+    
+    // Calculate response time (or use default if needed)
+    let rt = 500; // Default response time in ms
+    if (startTime) {
+      rt = Date.now() - startTime;
+      setStartTime(null);
+    } else {
+      setStartTime(Date.now()); // For analytics only, not used for game logic
+    }
+    setResponseTime(rt);
     
     // Update Q-values using Q-learning algorithm
     const newQValues = [...qValues];
@@ -437,28 +432,37 @@ export default function BanditGame() {
     setRewards([...rewards, reward]);
     setChoices([...choices, armIndex]);
     
-    // Record trial in database
-    recordTrialMutation.mutate({
-      choice: armIndex,
-      reward,
-      responseTime: rt
-    });
+    try {
+      // Record trial in database
+      recordTrialMutation.mutate({
+        choice: armIndex,
+        reward,
+        responseTime: rt
+      });
+      
+      // Update trial counter
+      const nextTrial = currentTrial + 1;
+      setCurrentTrial(nextTrial);
     
-    // Update trial counter
-    const nextTrial = currentTrial + 1;
-    setCurrentTrial(nextTrial);
-    
-    // Show reward feedback
-    toast({
-      title: reward ? "Reward Received! 🎉" : "No Reward 😢",
-      description: reward 
-        ? `Great choice! You earned a reward from the ${BANDIT_ARMS[armIndex].name} arm.` 
-        : `No reward this time from the ${BANDIT_ARMS[armIndex].name} arm. Try again!`
-    });
-    
-    // End game if we've reached max trials
-    if (nextTrial > maxTrials) {
-      endSessionMutation.mutate();
+      // Show reward feedback
+      toast({
+        title: reward ? "Reward Received! 🎉" : "No Reward 😢",
+        description: reward 
+          ? `Great choice! You earned a reward from the ${BANDIT_ARMS[armIndex].name} arm.` 
+          : `No reward this time from the ${BANDIT_ARMS[armIndex].name} arm. Try again!`
+      });
+      
+      // End game if we've reached max trials
+      if (nextTrial > maxTrials) {
+        endSessionMutation.mutate();
+      }
+    } catch (error) {
+      console.error("Error during game trial:", error);
+      toast({
+        variant: "destructive",
+        title: "Error in Game",
+        description: "There was a problem with your selection. Please try again."
+      });
     }
   };
 
