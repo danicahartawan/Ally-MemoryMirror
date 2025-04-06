@@ -45,6 +45,11 @@ export default function BanditGame() {
   const [gameTab, setGameTab] = useState<string>('game');
   const [isGameEnded, setIsGameEnded] = useState(false);
   
+  // Dynamic learning parameters that adapt to player performance and EEG
+  const [learningRate, setLearningRate] = useState(BASE_LEARNING_RATE);
+  const [explorationRate, setExplorationRate] = useState(BASE_EXPLORATION_RATE);
+  const [difficultyLevel, setDifficultyLevel] = useState(1); // 1-3 scale
+  
   // Game adaptation parameters based on EEG
   const [transitionDelay, setTransitionDelay] = useState(300); // ms between state changes
   const [visualFeedbackIntensity, setVisualFeedbackIntensity] = useState(1); // 1-3 scale
@@ -305,6 +310,56 @@ export default function BanditGame() {
     return Math.min(100, Math.max(0, combinedScore));
   };
 
+  // Adapt learning parameters based on player performance and EEG
+  useEffect(() => {
+    if (!gameSessionId || choices.length < 5) return;
+    
+    // Calculate performance metrics
+    const recentRewards = rewards.slice(-5);
+    const recentPerformance = recentRewards.reduce((sum, r) => sum + r, 0) / recentRewards.length;
+    
+    // Get optimal arm
+    const optimalArm = rewardProbabilities.indexOf(Math.max(...rewardProbabilities));
+    const recentChoices = choices.slice(-5);
+    const optimalChoiceCount = recentChoices.filter(c => c === optimalArm).length;
+    const optimalChoiceRate = optimalChoiceCount / recentChoices.length;
+    
+    // Dynamic adjustment of parameters based on performance
+    let newLearningRate = BASE_LEARNING_RATE;
+    let newExplorationRate = BASE_EXPLORATION_RATE;
+    let newDifficulty = difficultyLevel;
+    
+    // 1. If player is doing well, make it more challenging
+    if (recentPerformance > 0.7 && optimalChoiceRate > 0.6) {
+      newLearningRate = Math.max(0.05, BASE_LEARNING_RATE - 0.02); // Slower learning
+      newExplorationRate = Math.min(0.3, BASE_EXPLORATION_RATE + 0.05); // More exploration
+      newDifficulty = Math.min(3, difficultyLevel + 1);
+    }
+    // 2. If player is struggling, make it easier
+    else if (recentPerformance < 0.3 && optimalChoiceRate < 0.3) {
+      newLearningRate = Math.min(0.2, BASE_LEARNING_RATE + 0.05); // Faster learning
+      newExplorationRate = Math.max(0.1, BASE_EXPLORATION_RATE - 0.05); // Less exploration
+      newDifficulty = Math.max(1, difficultyLevel - 1);
+    }
+    
+    // 3. Adapt based on EEG state
+    if (eegState === "engaged") {
+      // When engaged, increase difficulty slightly
+      newDifficulty = Math.min(3, difficultyLevel + 0.5);
+    } else if (eegState === "stressed" || eegState === "overloaded") {
+      // When stressed, make it easier
+      newLearningRate = Math.min(0.2, newLearningRate + 0.02);
+      newExplorationRate = Math.max(0.1, newExplorationRate - 0.03);
+      newDifficulty = Math.max(1, difficultyLevel - 0.5);
+    }
+    
+    // Apply changes
+    setLearningRate(newLearningRate);
+    setExplorationRate(newExplorationRate);
+    setDifficultyLevel(newDifficulty);
+    
+  }, [choices, rewards, gameSessionId, eegState, difficultyLevel]);
+
   // Reset the game state
   const resetGame = () => {
     setQValues([0, 0, 0]);
@@ -313,6 +368,9 @@ export default function BanditGame() {
     setCurrentTrial(1);
     setIsGameEnded(false);
     setGameTab('game');
+    setLearningRate(BASE_LEARNING_RATE);
+    setExplorationRate(BASE_EXPLORATION_RATE);
+    setDifficultyLevel(1);
   };
 
   // Start a new game
@@ -341,8 +399,23 @@ export default function BanditGame() {
 
   // Handle arm selection
   const selectArm = (armIndex: number) => {
+    // Make sure we're in a valid game session
+    if (!gameSessionId) {
+      toast({
+        title: "Game not started",
+        description: "Please start the game first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Initialize start time if it's the first click
     if (!startTime) {
       setStartTime(Date.now());
+      toast({
+        title: "Arm selected",
+        description: `You've selected the ${BANDIT_ARMS[armIndex].name} arm. Click again to pull it.`,
+      });
       return;
     }
     
@@ -357,7 +430,7 @@ export default function BanditGame() {
     
     // Update Q-values using Q-learning algorithm
     const newQValues = [...qValues];
-    newQValues[armIndex] = newQValues[armIndex] + LEARNING_RATE * (reward - newQValues[armIndex]);
+    newQValues[armIndex] = newQValues[armIndex] + learningRate * (reward - newQValues[armIndex]);
     setQValues(newQValues);
     
     // Record choices and rewards
@@ -393,7 +466,7 @@ export default function BanditGame() {
   const renderArms = () => {
     return BANDIT_ARMS.map(arm => {
       // Apply EEG-based adaptations to game mechanics
-      const effectiveExplorationRate = Math.max(0, Math.min(1, EXPLORATION_RATE - explorationBoost));
+      const effectiveExplorationRate = Math.max(0, Math.min(1, explorationRate - explorationBoost));
       const shouldExploit = Math.random() > effectiveExplorationRate;
       
       // Apply reward volatility adaptation
