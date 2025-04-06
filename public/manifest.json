@@ -1,21 +1,21 @@
 {
-  "name": "Memory Mirror",
-  "short_name": "MemMirror",
+  "name": "Ally",
+  "short_name": "Ally",
   "description": "Memory assistance application for Alzheimer's patients",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFFFFF",
-  "theme_color": "#FF9933",
+  "theme_color": "#6a2c8e",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/generated-icon.png",
+      "src": "/ally-icon.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/generated-icon.png",
+      "src": "/ally-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

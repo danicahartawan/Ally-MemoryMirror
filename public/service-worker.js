@@ -1,12 +1,12 @@
-// Service Worker for Memory Mirror App
-const CACHE_NAME = 'memory-mirror-v1';
+// Service Worker for Ally App
+const CACHE_NAME = 'ally-v1';
 
 // Files to cache for offline use
 const filesToCache = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/generated-icon.png'
+  '/ally-icon.png'
 ];
 
 // Install event - cache resources
@@ -74,9 +74,9 @@ self.addEventListener('push', event => {
   const data = event.data.json();
   
   const options = {
-    body: data.body || 'Memory Mirror Notification',
-    icon: '/generated-icon.png',
-    badge: '/generated-icon.png',
+    body: data.body || 'Ally Notification',
+    icon: '/ally-icon.png',
+    badge: '/ally-icon.png',
     vibrate: [100, 50, 100],
     data: {
       url: data.url || '/'
@@ -84,7 +84,7 @@ self.addEventListener('push', event => {
   };
   
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Memory Mirror', options)
+    self.registration.showNotification(data.title || 'Ally', options)
   );
 });
 
