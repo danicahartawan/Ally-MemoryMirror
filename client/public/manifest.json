@@ -1,0 +1,52 @@
+{
+  "name": "Memory Mirror",
+  "short_name": "Memory Mirror",
+  "description": "A memory assistance application for Alzheimer's patients combining photo recognition games with AI storytelling",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#FF9933",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/generated-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/home.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Home Screen"
+    },
+    {
+      "src": "/screenshots/game.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Memory Game"
+    }
+  ],
+  "categories": ["healthcare", "medical", "education"],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Start Game",
+      "short_name": "Play",
+      "description": "Start memory training game",
+      "url": "/game",
+      "icons": [{ "src": "/icons/game.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "View Photos",
+      "short_name": "Photos",
+      "description": "View your photo library",
+      "url": "/photos",
+      "icons": [{ "src": "/icons/photos.png", "sizes": "192x192" }]
+    }
+  ]
+}

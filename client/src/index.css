@@ -3,11 +3,145 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --font-size-base: 1.1rem;
+    --line-height-base: 1.6;
+    --letter-spacing-base: 0.02em;
+  }
+
   * {
     @apply border-border;
   }
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
+    letter-spacing: var(--letter-spacing-base);
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold mb-4;
+    line-height: 1.3;
+  }
+  
+  h1 { @apply text-4xl; }
+  h2 { @apply text-3xl; }
+  h3 { @apply text-2xl; }
+  
+  p, li, span, a, button, input, label, select {
+    @apply text-lg;
+  }
+  
+  button, a, .clickable {
+    @apply cursor-pointer transition-all duration-200;
+  }
+}
+
+@layer components {
+  .senior-container {
+    @apply max-w-5xl mx-auto px-6 py-8;
+  }
+  
+  .senior-card {
+    @apply p-6 rounded-lg shadow-lg bg-white border border-gray-100;
+  }
+  
+  .senior-button {
+    @apply py-3 px-6 text-xl font-semibold rounded-md shadow-md hover:shadow-lg transition-all duration-200;
+    touch-action: manipulation; /* Prevent double-tap zoom on mobile */
+  }
+  
+  .senior-input {
+    @apply p-3 text-xl border-2 rounded-md w-full focus:ring-2 focus:ring-primary/50;
+  }
+  
+  .senior-label {
+    @apply block text-xl font-medium mb-2;
+  }
+  
+  .high-contrast-text {
+    @apply text-gray-900 font-medium;
+  }
+  
+  .focus-highlight:focus {
+    @apply outline-none ring-4 ring-primary/50;
+  }
+  
+  /* Mobile PWA specific styles */
+  .pwa-home-screen {
+    @apply h-[100vh] flex flex-col overflow-hidden;
+  }
+  
+  .pwa-safe-area {
+    @apply px-safe py-safe;
+  }
+  
+  /* iOS status bar space when in standalone mode */
+  @supports (padding-top: env(safe-area-inset-top)) {
+    .pwa-status-bar-padding {
+      padding-top: env(safe-area-inset-top);
+    }
+    
+    .pwa-bottom-padding {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+  
+  /* Prevent pull-to-refresh in PWA mode */
+  @media (display-mode: standalone) {
+    body {
+      overscroll-behavior-y: none;
+      -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
+    }
+    
+    /* Improved touch targets for better mobile usability */
+    button, 
+    .clickable, 
+    a, 
+    input[type="checkbox"], 
+    input[type="radio"] {
+      @apply min-h-[44px] min-w-[44px];
+    }
+  }
+  
+  /* Enhanced mobile styles */
+  .app-offline-indicator {
+    @apply fixed top-0 left-0 w-full bg-amber-400 text-black py-2 px-4 text-center font-medium z-50;
+  }
+  
+  .senior-loading-spinner {
+    @apply w-12 h-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin;
+  }
+  
+  /* Mobile-specific adjustments */
+  @media (max-width: 640px) {
+    .senior-container {
+      @apply px-4 py-6;
+    }
+    
+    .senior-card {
+      @apply p-4;
+    }
+    
+    /* Larger touch targets on mobile */
+    .senior-button {
+      @apply py-4 px-6 min-h-[48px] text-center flex items-center justify-center;
+    }
+    
+    /* Bottom navigation padding */
+    .has-bottom-nav {
+      @apply pb-20;
+    }
+    
+    /* Fixed bottom navigation */
+    .mobile-bottom-nav {
+      @apply fixed bottom-0 left-0 w-full bg-background border-t border-border py-2 px-4 flex justify-around items-center z-40;
+    }
+    
+    /* Better spacing for mobile forms */
+    .mobile-form-spacing > * + * {
+      @apply mt-6;
+    }
   }
 }

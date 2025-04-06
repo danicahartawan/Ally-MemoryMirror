@@ -12,13 +12,29 @@ import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { ProfileProvider } from "@/contexts/profile-context";
 import { PhotoProvider } from "@/contexts/photo-context";
+import { useEffect } from "react";
+import { PwaAssets } from "@/components/pwa/pwa-assets";
+import { PWAInstallPrompt } from "@/components/pwa/install-prompt";
 
 function Router() {
+  // Handle mobile viewport height adjustments for better mobile experience
+  useEffect(() => {
+    const handleResize = () => {
+      // Set a custom CSS variable for viewport height that accounts for mobile browsers
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen" style={{ minHeight: 'calc(var(--vh, 1vh) * 100)' }}>
       <Header />
-      <main className="flex-grow px-4 sm:px-6 py-8">
-        <div className="container mx-auto max-w-5xl">
+      <main className="flex-grow px-4 sm:px-6 py-6">
+        <div className="senior-container">
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/game" component={Game} />
@@ -34,12 +50,52 @@ function Router() {
   );
 }
 
+// Meta tags to make the app feel more native on mobile
+function MobileMetaTags() {
+  useEffect(() => {
+    // Add meta tags for mobile app-like experience
+    const metaTags = [
+      { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover' },
+      { name: 'apple-mobile-web-app-capable', content: 'yes' },
+      { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
+      { name: 'apple-mobile-web-app-title', content: 'Memory Mirror' },
+      { name: 'mobile-web-app-capable', content: 'yes' },
+      { name: 'theme-color', content: '#FF9933' }, // Match our primary color
+      { name: 'application-name', content: 'Memory Mirror' }
+    ];
+    
+    metaTags.forEach(({ name, content }) => {
+      let meta = document.querySelector(`meta[name="${name}"]`);
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', name);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    });
+    
+    // Add a link for apple-touch-icon
+    let link = document.querySelector('link[rel="apple-touch-icon"]');
+    if (!link) {
+      link = document.createElement('link');
+      link.setAttribute('rel', 'apple-touch-icon');
+      document.head.appendChild(link);
+    }
+    link.setAttribute('href', '/generated-icon.png');
+  }, []);
+  
+  return null;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ProfileProvider>
         <PhotoProvider>
+          <MobileMetaTags />
+          <PwaAssets />
           <Router />
+          <PWAInstallPrompt />
           <Toaster />
         </PhotoProvider>
       </ProfileProvider>

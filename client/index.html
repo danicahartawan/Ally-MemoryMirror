@@ -2,12 +2,60 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Memory Mirror</title>
+    <meta name="description" content="Memory assistance application for Alzheimer's patients combining photo recognition games with AI storytelling and EEG monitoring." />
+    
+    <!-- PWA meta tags -->
+    <meta name="theme-color" content="#FF9933" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Memory Mirror">
+    <meta name="application-name" content="Memory Mirror">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- PWA icons -->
+    <link rel="icon" type="image/png" href="/generated-icon.png" />
+    <link rel="apple-touch-icon" href="/generated-icon.png" />
+    
+    <!-- Web app manifest for installability -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- iOS splash screens -->
+    <link rel="apple-touch-startup-image" href="/generated-icon.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" />
+    <link rel="apple-touch-startup-image" href="/generated-icon.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" />
+    <link rel="apple-touch-startup-image" href="/generated-icon.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)" />
+    <link rel="apple-touch-startup-image" href="/generated-icon.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" />
+    
+    <!-- Preload resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Prevent auto-zooming on input fields -->
+    <style>
+      input[type="text"],
+      input[type="email"],
+      input[type="password"],
+      textarea {
+        font-size: 16px;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    
+    <!-- No JS fallback content -->
+    <noscript>
+      <div style="padding: 2rem; text-align: center; font-family: sans-serif;">
+        <h1>JavaScript Required</h1>
+        <p>Memory Mirror requires JavaScript to function. Please enable JavaScript in your browser settings.</p>
+      </div>
+    </noscript>
+    
     <script type="module" src="/src/main.tsx"></script>
-    <!-- This script injects a replit badge into the page, please feel free to remove this line -->
+    
+    <!-- This script injects a replit badge into the page -->
     <script type="text/javascript" src="https://replit.com/public/js/replit-badge-v3.js"></script>
   </body>
 </html>
