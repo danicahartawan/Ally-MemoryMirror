@@ -145,8 +145,9 @@ export default function BanditGame() {
     mutationFn: async () => {
       if (!selectedProfile) throw new Error("No profile selected");
       const response = await apiRequest('POST', '/api/bandit-game-sessions', { profileId: selectedProfile.id });
-      // Type assertion pattern to safely cast to the required type
-      return response as unknown as BanditGameSessionResponse;
+      // Parse the response JSON
+      const data = await response.json();
+      return data;
     },
     onSuccess: (data: BanditGameSessionResponse) => {
       setGameSessionId(data.id);
@@ -156,22 +157,37 @@ export default function BanditGame() {
         description: "3-Armed Bandit Memory Trainer has begun.",
       });
     },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to start game",
+        description: error.message,
+      });
+    },
   });
 
   // Record a trial
   const recordTrialMutation = useMutation({
     mutationFn: async (data: { choice: number, reward: number, responseTime: number }) => {
       if (!gameSessionId) throw new Error("No active game session");
-      return apiRequest('POST', '/api/bandit-game-trials', {
+      const response = await apiRequest('POST', '/api/bandit-game-trials', {
         sessionId: gameSessionId,
         trialNumber: currentTrial,
         choice: data.choice,
         reward: data.reward,
         responseTime: data.responseTime,
       });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bandit-game-trials'] });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to record trial",
+        description: error.message,
+      });
     },
   });
 
@@ -180,8 +196,9 @@ export default function BanditGame() {
     mutationFn: async () => {
       if (!gameSessionId) throw new Error("No active game session");
       const response = await apiRequest('PATCH', `/api/bandit-game-sessions/${gameSessionId}/end`);
-      // Type assertion pattern to safely cast to the required type
-      return response as unknown as BanditGameSessionResponse;
+      // Parse the response JSON
+      const data = await response.json();
+      return data;
     },
     onSuccess: (data: BanditGameSessionResponse) => {
       setIsGameEnded(true);
@@ -193,6 +210,13 @@ export default function BanditGame() {
       
       // Create a cognitive profile based on the session
       createCognitiveProfileMutation.mutate();
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to end game",
+        description: error.message,
+      });
     },
   });
 
@@ -215,7 +239,7 @@ export default function BanditGame() {
       const cognitiveControl = Math.min(100, Math.max(0, 
         (eegData.relaxation + 100 - eegData.stress) / 2));
       
-      return apiRequest('POST', '/api/eeg-cognitive-profiles', {
+      const response = await apiRequest('POST', '/api/eeg-cognitive-profiles', {
         profileId: selectedProfile.id,
         alzheimersLikelihood: calculateAlzheimersLikelihood(),
         attentionScore: attentionScore,
@@ -224,10 +248,18 @@ export default function BanditGame() {
         fatigueLevel: 100 - eegData.relaxation,
         dataPoints: currentTrial
       });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/eeg-cognitive-profiles'] });
       setGameTab('results');
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to create cognitive profile",
+        description: error.message,
+      });
     },
   });
 
