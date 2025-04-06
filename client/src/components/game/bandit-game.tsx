@@ -25,9 +25,9 @@ const BANDIT_ARMS: BanditArm[] = [
   { id: 2, name: 'Right', icon: '🟠', color: 'bg-orange-500' },
 ];
 
-// Learning parameters
-const LEARNING_RATE = 0.1;
-const EXPLORATION_RATE = 0.2;
+// Learning parameters (starting values, will adapt dynamically)
+const BASE_LEARNING_RATE = 0.1;
+const BASE_EXPLORATION_RATE = 0.2;
 
 export default function BanditGame() {
   const { selectedProfile } = useProfileContext();
@@ -144,10 +144,7 @@ export default function BanditGame() {
   const startSessionMutation = useMutation<BanditGameSessionResponse>({
     mutationFn: async () => {
       if (!selectedProfile) throw new Error("No profile selected");
-      const response = await apiRequest('POST', '/api/bandit-game-sessions', { profileId: selectedProfile.id });
-      // Parse the response JSON
-      const data = await response.json();
-      return data;
+      return apiRequest('POST', '/api/bandit-game-sessions', { profileId: selectedProfile.id }, true);
     },
     onSuccess: (data: BanditGameSessionResponse) => {
       setGameSessionId(data.id);
@@ -170,14 +167,13 @@ export default function BanditGame() {
   const recordTrialMutation = useMutation({
     mutationFn: async (data: { choice: number, reward: number, responseTime: number }) => {
       if (!gameSessionId) throw new Error("No active game session");
-      const response = await apiRequest('POST', '/api/bandit-game-trials', {
+      return apiRequest('POST', '/api/bandit-game-trials', {
         sessionId: gameSessionId,
         trialNumber: currentTrial,
         choice: data.choice,
         reward: data.reward,
         responseTime: data.responseTime,
-      });
-      return response.json();
+      }, true);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bandit-game-trials'] });
@@ -195,10 +191,7 @@ export default function BanditGame() {
   const endSessionMutation = useMutation<BanditGameSessionResponse>({
     mutationFn: async () => {
       if (!gameSessionId) throw new Error("No active game session");
-      const response = await apiRequest('PATCH', `/api/bandit-game-sessions/${gameSessionId}/end`);
-      // Parse the response JSON
-      const data = await response.json();
-      return data;
+      return apiRequest('PATCH', `/api/bandit-game-sessions/${gameSessionId}/end`, undefined, true);
     },
     onSuccess: (data: BanditGameSessionResponse) => {
       setIsGameEnded(true);
@@ -239,7 +232,7 @@ export default function BanditGame() {
       const cognitiveControl = Math.min(100, Math.max(0, 
         (eegData.relaxation + 100 - eegData.stress) / 2));
       
-      const response = await apiRequest('POST', '/api/eeg-cognitive-profiles', {
+      return apiRequest('POST', '/api/eeg-cognitive-profiles', {
         profileId: selectedProfile.id,
         alzheimersLikelihood: calculateAlzheimersLikelihood(),
         attentionScore: attentionScore,
@@ -247,8 +240,7 @@ export default function BanditGame() {
         cognitiveControl: cognitiveControl,
         fatigueLevel: 100 - eegData.relaxation,
         dataPoints: currentTrial
-      });
-      return response.json();
+      }, true);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/eeg-cognitive-profiles'] });
@@ -334,7 +326,17 @@ export default function BanditGame() {
       return;
     }
     
-    startSessionMutation.mutate();
+    console.log("Starting game with profile:", selectedProfile);
+    try {
+      startSessionMutation.mutate();
+    } catch (error) {
+      console.error("Error starting game:", error);
+      toast({
+        title: "Error",
+        description: "Failed to start game: " + (error instanceof Error ? error.message : String(error)),
+        variant: "destructive",
+      });
+    }
   };
 
   // Handle arm selection

@@ -81,11 +81,15 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
-): Promise<Response> {
+  parseJson: boolean = false
+): Promise<Response | any> {
   // For GET requests, check cache first when offline
   if (method === 'GET' && isOffline()) {
     const cachedData = getFromLocalStorageCache(url);
     if (cachedData) {
+      if (parseJson) {
+        return cachedData;
+      }
       // Return a mock Response object with cached data
       return new Response(JSON.stringify(cachedData), {
         status: 200,
@@ -110,11 +114,21 @@ export async function apiRequest(
       const jsonData = await clonedRes.json();
       cacheToLocalStorage(url, jsonData);
       
+      if (parseJson) {
+        return jsonData;
+      }
+      
       // Return a new response since we consumed the original
       return new Response(JSON.stringify(jsonData), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
       });
+    }
+    
+    // For other methods, parse JSON if requested
+    if (parseJson) {
+      const jsonData = await res.json();
+      return jsonData;
     }
     
     return res;
@@ -123,6 +137,9 @@ export async function apiRequest(
     if (isOffline()) {
       const cachedData = getFromLocalStorageCache(url);
       if (cachedData) {
+        if (parseJson) {
+          return cachedData;
+        }
         return new Response(JSON.stringify(cachedData), {
           status: 200,
           headers: { 'Content-Type': 'application/json' }
