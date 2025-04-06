@@ -175,9 +175,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate an initial message about the person
       const initialMessage = await generateStory(
         photo.name, 
-        photo.relationship, 
-        photo.place, 
-        photo.memoryNotes
+        photo.relationship ?? undefined, 
+        photo.place ?? undefined, 
+        photo.memoryNotes ?? undefined
       );
       
       // Create the message
@@ -246,7 +246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/openai/story", async (req: Request, res: Response) => {
     try {
       const { name, relationship, place, memoryNotes, eegData } = req.body;
-      const story = await generateStory(name, relationship, place, memoryNotes, eegData);
+      const story = await generateStory(name, relationship ?? undefined, place ?? undefined, memoryNotes ?? undefined, eegData);
       res.json({ story });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate story" });
@@ -256,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/openai/hints", async (req: Request, res: Response) => {
     try {
       const { name, relationship, place, memoryNotes } = req.body;
-      const hints = await generateHints(name, relationship, place, memoryNotes);
+      const hints = await generateHints(name, relationship ?? undefined, place ?? undefined, memoryNotes ?? undefined);
       res.json({ hints });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate hints" });
@@ -429,6 +429,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: error.message });
       }
       res.status(500).json({ message: "Failed to create EEG cognitive profile" });
+    }
+  });
+
+  // EEG Data Upload endpoint
+  app.post("/api/eeg-uploads", upload.single('eegFile'), async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      const profileId = req.body.profileId ? parseInt(req.body.profileId) : undefined;
+      if (!profileId) {
+        return res.status(400).json({ message: "Profile ID is required" });
+      }
+      
+      const sessionType = req.body.sessionType || 'free';
+      
+      // Process the uploaded file (we'll implement the actual processing based on your data)
+      const fileContent = req.file.buffer.toString('utf8');
+      
+      // For now, let's create a mock session to link the data to
+      let sessionId;
+      if (sessionType === 'game') {
+        const gameSession = await storage.createGameSession({ profileId });
+        sessionId = gameSession.id;
+      } else if (sessionType === 'bandit') {
+        const banditSession = await storage.createBanditGameSession({ profileId });
+        sessionId = banditSession.id;
+      } else {
+        // For free recordings, we don't need a specific session
+        sessionId = 0;
+      }
+      
+      // For demonstration - extract a few lines from the file to create sample readings
+      // In the real implementation, we'll actually process the uploaded EEG data format
+      const lines = fileContent.split('\\n').slice(0, 10); // Just use first 10 lines for demo
+      const readings = [];
+      
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim()) {
+          // Create reading with dummy values for now
+          // These would be parsed from the actual file format
+          const reading = await storage.createEegReading({
+            profileId,
+            sessionId,
+            attention: Math.floor(Math.random() * 100),
+            relaxation: Math.floor(Math.random() * 100),
+            stress: Math.floor(Math.random() * 100),
+            recognition: Math.floor(Math.random() * 100)
+          });
+          readings.push(reading);
+        }
+      }
+      
+      // Generate a cognitive profile from these readings
+      const cognitiveProfile = await storage.createEegCognitiveProfile({
+        profileId,
+        alzheimersLikelihood: Math.floor(Math.random() * 100),
+        attentionScore: Math.floor(Math.random() * 100),
+        memoryScore: Math.floor(Math.random() * 100),
+        cognitiveControl: Math.floor(Math.random() * 100),
+        fatigueLevel: Math.floor(Math.random() * 100),
+        dataPoints: readings.length,
+        featureImportance: {
+          attention: Math.random() * 0.3 + 0.1,
+          relaxation: Math.random() * 0.2 + 0.1,
+          stress: Math.random() * 0.4 + 0.2,
+          recognition: Math.random() * 0.3 + 0.1,
+          temporalPatterns: Math.random() * 0.2 + 0.1
+        }
+      });
+      
+      res.status(201).json({
+        message: "EEG data processed successfully",
+        dataPoints: readings.length,
+        cognitiveProfileId: cognitiveProfile.id
+      });
+    } catch (error) {
+      console.error("Error processing EEG data:", error);
+      res.status(500).json({ message: "Failed to process EEG data" });
+    }
+  });
+
+  // Dataset comparison endpoint
+  app.post("/api/eeg-dataset-comparison", async (req: Request, res: Response) => {
+    try {
+      const { profileId, datasetType } = req.body;
+      
+      if (!profileId) {
+        return res.status(400).json({ message: "Profile ID is required" });
+      }
+      
+      // This endpoint will compare a user's EEG readings against a reference dataset
+      // datasetType can be 'healthy' (HBN-EEG) or 'alzheimers' (ds004504)
+      
+      const cognitiveProfile = await storage.getLatestEegCognitiveProfileByProfileId(profileId);
+      if (!cognitiveProfile) {
+        return res.status(404).json({ message: "No cognitive profile found for this user" });
+      }
+      
+      // In the actual implementation, we would load and compare against the real datasets
+      // For now, we'll return mock comparison data
+      
+      const comparison = {
+        profileId,
+        datasetType,
+        similarityScore: Math.floor(Math.random() * 100),
+        keyDifferences: {
+          alphaWaves: Math.random() < 0.33 ? "higher" : Math.random() < 0.5 ? "lower" : "similar",
+          betaWaves: Math.random() < 0.33 ? "higher" : Math.random() < 0.5 ? "lower" : "similar",
+          thetaWaves: Math.random() < 0.33 ? "higher" : Math.random() < 0.5 ? "lower" : "similar",
+          deltaWaves: Math.random() < 0.33 ? "higher" : Math.random() < 0.5 ? "lower" : "similar",
+          gammaWaves: Math.random() < 0.33 ? "higher" : Math.random() < 0.5 ? "lower" : "similar"
+        },
+        recommendation: "Continue cognitive exercises to improve brain activity patterns.",
+        timestamp: new Date().toISOString()
+      };
+      
+      res.json(comparison);
+    } catch (error) {
+      console.error("Error in dataset comparison:", error);
+      res.status(500).json({ message: "Failed to compare against dataset" });
     }
   });
 

@@ -8,21 +8,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs as ShadcnTabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useProfileContext } from "@/contexts/profile-context";
 import { format } from "date-fns";
-import { BrainCircuit, BarChart as BarChartIcon, Activity } from 'lucide-react';
+import { BrainCircuit, BarChart as BarChartIcon, Activity, Upload, Database } from 'lucide-react';
 import EegCognitiveProfile from "@/components/eeg/eeg-cognitive-profile";
+import EegDataUploader from "@/components/eeg/eeg-data-uploader";
+import EegDatasetComparison from "@/components/eeg/eeg-dataset-comparison";
 import BanditGame from "@/components/game/bandit-game";
 
 export default function Insights() {
   const { selectedProfile } = useProfileContext();
   
   // Fetch game sessions for charts
-  const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
+  const { data: sessions = [], isLoading: sessionsLoading } = useQuery<any[]>({
     queryKey: ['/api/game-sessions', selectedProfile?.id],
     enabled: !!selectedProfile,
   });
   
   // Fetch EEG readings for charts
-  const { data: eegReadings = [], isLoading: eegLoading } = useQuery({
+  const { data: eegReadings = [], isLoading: eegLoading } = useQuery<any[]>({
     queryKey: ['/api/eeg-readings', selectedProfile?.id],
     enabled: !!selectedProfile,
   });
@@ -87,8 +89,8 @@ export default function Insights() {
     );
   }
   
-  const sessionData = formatSessionData(sessions);
-  const eegData = formatEegData(eegReadings);
+  const sessionData = formatSessionData(sessions as any[]);
+  const eegData = formatEegData(eegReadings as any[]);
   
   return (
     <div>
@@ -108,6 +110,12 @@ export default function Insights() {
           </TabsTrigger>
           <TabsTrigger value="cognitive-profile" className="flex items-center">
             <BrainCircuit className="mr-2 h-4 w-4" /> Cognitive Profile
+          </TabsTrigger>
+          <TabsTrigger value="eeg-upload" className="flex items-center">
+            <Upload className="mr-2 h-4 w-4" /> EEG Upload
+          </TabsTrigger>
+          <TabsTrigger value="dataset-comparison" className="flex items-center">
+            <Database className="mr-2 h-4 w-4" /> Dataset Comparison
           </TabsTrigger>
           <TabsTrigger value="bandit-game" className="flex items-center">
             <BarChartIcon className="mr-2 h-4 w-4" /> 3-Armed Bandit Trainer
@@ -238,6 +246,14 @@ export default function Insights() {
         
         <TabsContent value="cognitive-profile">
           <EegCognitiveProfile />
+        </TabsContent>
+        
+        <TabsContent value="eeg-upload">
+          <EegDataUploader />
+        </TabsContent>
+        
+        <TabsContent value="dataset-comparison">
+          <EegDatasetComparison />
         </TabsContent>
         
         <TabsContent value="bandit-game">
