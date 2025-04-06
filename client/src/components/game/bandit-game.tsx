@@ -144,7 +144,7 @@ export default function BanditGame() {
   const startSessionMutation = useMutation<BanditGameSessionResponse>({
     mutationFn: async () => {
       if (!selectedProfile) throw new Error("No profile selected");
-      const response = await apiRequest('/api/bandit-game-sessions', 'POST', { profileId: selectedProfile.id });
+      const response = await apiRequest('POST', '/api/bandit-game-sessions', { profileId: selectedProfile.id });
       // Type assertion pattern to safely cast to the required type
       return response as unknown as BanditGameSessionResponse;
     },
@@ -162,7 +162,7 @@ export default function BanditGame() {
   const recordTrialMutation = useMutation({
     mutationFn: async (data: { choice: number, reward: number, responseTime: number }) => {
       if (!gameSessionId) throw new Error("No active game session");
-      return apiRequest('/api/bandit-game-trials', 'POST', {
+      return apiRequest('POST', '/api/bandit-game-trials', {
         sessionId: gameSessionId,
         trialNumber: currentTrial,
         choice: data.choice,
@@ -179,7 +179,7 @@ export default function BanditGame() {
   const endSessionMutation = useMutation<BanditGameSessionResponse>({
     mutationFn: async () => {
       if (!gameSessionId) throw new Error("No active game session");
-      const response = await apiRequest(`/api/bandit-game-sessions/${gameSessionId}/end`, 'PATCH');
+      const response = await apiRequest('PATCH', `/api/bandit-game-sessions/${gameSessionId}/end`);
       // Type assertion pattern to safely cast to the required type
       return response as unknown as BanditGameSessionResponse;
     },
@@ -215,7 +215,7 @@ export default function BanditGame() {
       const cognitiveControl = Math.min(100, Math.max(0, 
         (eegData.relaxation + 100 - eegData.stress) / 2));
       
-      return apiRequest('/api/eeg-cognitive-profiles', 'POST', {
+      return apiRequest('POST', '/api/eeg-cognitive-profiles', {
         profileId: selectedProfile.id,
         alzheimersLikelihood: calculateAlzheimersLikelihood(),
         attentionScore: attentionScore,
