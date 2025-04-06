@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -8,15 +8,21 @@ import Game from "@/pages/game";
 import PhotoLibrary from "@/pages/photo-library";
 import Insights from "@/pages/insights";
 import Settings from "@/pages/settings";
+import Login from "@/pages/login";
+import Signup from "@/pages/signup";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
-import { ProfileProvider } from "@/contexts/profile-context";
+import { ProfileProvider, useProfileContext } from "@/contexts/profile-context";
 import { PhotoProvider } from "@/contexts/photo-context";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { PwaAssets } from "@/components/pwa/pwa-assets";
 import { PWAInstallPrompt } from "@/components/pwa/install-prompt";
 
 function Router() {
+  const [location] = useLocation();
+  const { selectedProfile } = useProfileContext();
+  const isAuthRoute = location === "/login" || location === "/signup";
+  
   // Handle mobile viewport height adjustments for better mobile experience
   useEffect(() => {
     const handleResize = () => {
@@ -29,6 +35,27 @@ function Router() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // If there's no selected profile and we're not on an auth route, redirect to login
+  useEffect(() => {
+    if (!selectedProfile && !isAuthRoute && location !== "/") {
+      window.location.href = "/login";
+    }
+  }, [selectedProfile, isAuthRoute, location]);
+
+  // Don't show header and footer for auth pages
+  if (isAuthRoute) {
+    return (
+      <div className="flex flex-col min-h-screen" style={{ minHeight: 'calc(var(--vh, 1vh) * 100)' }}>
+        <main className="flex-grow">
+          <Switch>
+            <Route path="/login" component={Login} />
+            <Route path="/signup" component={Signup} />
+          </Switch>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen" style={{ minHeight: 'calc(var(--vh, 1vh) * 100)' }}>

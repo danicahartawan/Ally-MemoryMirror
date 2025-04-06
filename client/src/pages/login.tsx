@@ -70,13 +70,8 @@ export default function Login() {
 
       <div className="flex-grow flex flex-col px-6 py-10 items-center">
         {/* Logo */}
-        <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mb-8">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="2" y="6" width="20" height="12" rx="2" stroke="white" strokeWidth="2" />
-            <circle cx="8" cy="12" r="2" fill="white" />
-            <circle cx="16" cy="12" r="2" fill="white" />
-            <path d="M8 18C8 18 8 20 12 20C16 20 16 18 16 18" stroke="white" strokeWidth="2" strokeLinecap="round" />
-          </svg>
+        <div className="w-24 h-24 bg-black rounded-full flex items-center justify-center mb-8 p-3">
+          <img src="/src/assets/logo.png" alt="Memory Mirror Logo" className="w-full h-full" />
         </div>
 
         <h1 className="text-2xl font-bold mb-1">Login to your account</h1>
