@@ -31,7 +31,7 @@ export function PWAInstallPrompt() {
         if (installed) {
           toast({
             title: "App Installed!",
-            description: "Memory Mirror has been added to your home screen.",
+            description: "Ally has been added to your home screen.",
           });
         }
       } catch (error) {
@@ -54,7 +54,7 @@ export function PWAInstallPrompt() {
       <Dialog open={showPrompt} onOpenChange={setShowPrompt}>
         <DialogContent className="senior-card max-w-md mx-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl">Add Memory Mirror to Home Screen</DialogTitle>
+            <DialogTitle className="text-2xl">Add Ally to Home Screen</DialogTitle>
             <DialogDescription className="text-lg mt-2">
               Install this app on your device for a better experience with larger buttons, offline access,
               and easy access from your home screen.
@@ -92,7 +92,7 @@ export function PWAInstallPrompt() {
           <DialogHeader>
             <DialogTitle className="text-2xl">Install on iOS</DialogTitle>
             <DialogDescription className="text-lg mt-2">
-              Follow these steps to add Memory Mirror to your home screen:
+              Follow these steps to add Ally to your home screen:
             </DialogDescription>
           </DialogHeader>
           
