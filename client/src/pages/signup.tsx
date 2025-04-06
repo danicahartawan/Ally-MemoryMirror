@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Mail, User } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useProfileContext } from "@/contexts/profile-context";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -46,7 +46,7 @@ export default function Signup() {
       
       toast({
         title: "Account created",
-        description: `Welcome, ${profile.name}!`,
+        description: `Welcome to Ally AI, ${profile.name}!`,
       });
     } catch (error) {
       toast({
@@ -60,9 +60,9 @@ export default function Signup() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f8f7f4]">
+    <div className="flex flex-col min-h-screen bg-[#f5f4ee]">
       {/* Status bar mockup */}
-      <div className="flex justify-between items-center p-2 text-sm text-black bg-[#f8f7f4]">
+      <div className="flex justify-between items-center p-2 text-sm text-black">
         <div>9:41</div>
         <div className="flex items-center gap-1">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -82,42 +82,47 @@ export default function Signup() {
         </div>
       </div>
 
-      <div className="flex-grow flex flex-col px-6 py-10 items-center">
+      <div className="flex-grow flex flex-col px-6 py-6 items-center">
         {/* Logo */}
-        <div className="w-24 h-24 bg-black rounded-full flex items-center justify-center mb-8 p-3">
-          <img src="/src/assets/logo.png" alt="Memory Mirror Logo" className="w-full h-full" />
+        <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center mb-6 p-3">
+          <img src="/src/assets/logo.png" alt="Ally AI Logo" className="w-full h-full" />
         </div>
 
-        <h1 className="text-2xl font-bold mb-1">Create your account</h1>
+        <h1 className="text-2xl font-bold mb-1 text-left w-full">Create your account</h1>
         
-        <div className="text-sm text-gray-500 mb-8">
-          Already have an account? <button className="text-purple-700 font-semibold" onClick={() => setLocation("/login")}>Login</button>
+        <div className="text-sm text-gray-500 mb-6 text-left w-full">
+          Already have an account? <button className="text-[#6a2c8e] font-semibold" onClick={() => setLocation("/login")}>Login</button>
         </div>
 
-        <form className="w-full max-w-sm space-y-4" onSubmit={handleSignup}>
+        <form className="w-full space-y-4" onSubmit={handleSignup}>
           <div className="relative">
             <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <User className="h-5 w-5 text-gray-400" />
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
             </div>
             <Input 
               type="text" 
               placeholder="Full Name" 
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="pl-10 pr-3 py-3 rounded-full bg-white border-gray-200"
+              className="pl-10 pr-3 py-5 rounded-full bg-white border-gray-200"
             />
           </div>
 
           <div className="relative">
             <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <Mail className="h-5 w-5 text-gray-400" />
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                <path d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+              </svg>
             </div>
             <Input 
               type="email" 
               placeholder="Email" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 pr-3 py-3 rounded-full bg-white border-gray-200"
+              className="pl-10 pr-3 py-5 rounded-full bg-white border-gray-200"
             />
           </div>
 
@@ -133,7 +138,7 @@ export default function Signup() {
               placeholder="Password" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 pr-10 py-3 rounded-full bg-white border-gray-200"
+              className="pl-10 pr-10 py-5 rounded-full bg-white border-gray-200"
             />
             <div 
               className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
@@ -142,52 +147,22 @@ export default function Signup() {
               {showPassword ? (
                 <EyeOff className="h-5 w-5 text-gray-400" />
               ) : (
-                <Eye className="h-5 w-5 text-gray-400" />
+                <Eye className="h-5 w-5 text-[#6a2c8e]" />
               )}
             </div>
           </div>
 
           <Button 
             type="submit" 
-            className="w-full py-6 rounded-full bg-purple-700 hover:bg-purple-800"
+            className="w-full py-6 mt-4 rounded-full bg-[#6a2c8e] hover:bg-[#5a2277]"
             disabled={isLoading}
           >
             {isLoading ? "Creating account..." : "Sign Up"}
           </Button>
-          
-          <div className="relative flex items-center justify-center">
-            <div className="border-t border-gray-300 absolute w-full"></div>
-            <div className="bg-[#f8f7f4] px-4 relative text-gray-500 text-sm">or</div>
-          </div>
-          
-          <div className="flex justify-between gap-4">
-            <button type="button" className="flex-1 p-3 rounded-full border border-gray-300 flex justify-center">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20.283 10.356h-8.327v3.451h4.792c-.446 2.193-2.313 3.453-4.792 3.453a5.27 5.27 0 0 1-5.279-5.28 5.27 5.27 0 0 1 5.279-5.279c1.259 0 2.397.447 3.29 1.178l2.6-2.599c-1.584-1.381-3.615-2.233-5.89-2.233a8.908 8.908 0 0 0-8.934 8.934 8.907 8.907 0 0 0 8.934 8.934c4.467 0 8.529-3.249 8.529-8.934 0-.528-.081-1.097-.202-1.625z" fill="#4285F4"/>
-                <path d="M12.956 9.51H4.63v3.45h3.782a5.263 5.263 0 0 1-1.391 2.316c-.794.68-1.8 1.082-2.939 1.082a5.27 5.27 0 0 1-5.279-5.28 5.27 5.27 0 0 1 5.279-5.279c1.259 0 2.397.447 3.29 1.178" fill="#34A853"/>
-                <path d="M7.545 14.339a5.263 5.263 0 0 0 2.478 2.316c.794.68 1.8 1.082 2.939 1.082 4.467 0 8.529-3.249 8.529-8.934 0-.528-.081-1.097-.202-1.625l-13.744 7.161z" fill="#FBBC05"/>
-                <path d="M12.956 9.51H4.63v3.45h3.782l4.544-3.45z" fill="#EA4335"/>
-              </svg>
-            </button>
-            <button type="button" className="flex-1 p-3 rounded-full border border-gray-300 flex justify-center">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M16.6575 2H19.658L13.1675 9.874L20.748 20H14.9238L10.2863 14.0515L5.02125 20H2.01875L9.02425 11.5323L1.748 2H7.70525L11.8215 7.38515L16.6575 2ZM15.748 18.2768H17.2063L6.83175 3.6505H5.257L15.748 18.2768Z" fill="black"/>
-              </svg>
-            </button>
-            <button type="button" className="flex-1 p-3 rounded-full border border-gray-300 flex justify-center">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M15.402 1.5H18.5V5.5H15.4L15.402 1.5Z" fill="#FF0084"/>
-                <path d="M15.402 1.5H8.5V9.5H15.4L15.402 1.5Z" fill="#0063DC"/>
-                <path d="M8.5 9.5H1.5V15.5H8.5V9.5Z" fill="#0063DC"/>
-                <path d="M8.5 15.5H15.5V22.5H8.5V15.5Z" fill="#0063DC"/>
-                <path d="M15.5 9.5H22.5V15.5H15.5V9.5Z" fill="#0063DC"/>
-              </svg>
-            </button>
-          </div>
         </form>
       </div>
 
-      <div className="p-4 text-xs text-center text-gray-500 flex justify-center gap-4">
+      <div className="flex justify-center border-t border-gray-200 py-4 text-xs text-center text-gray-500 gap-4">
         <span>Terms of use</span>
         <span>|</span>
         <span>Privacy policy</span>

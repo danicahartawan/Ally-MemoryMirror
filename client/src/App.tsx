@@ -85,10 +85,10 @@ function MobileMetaTags() {
       { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover' },
       { name: 'apple-mobile-web-app-capable', content: 'yes' },
       { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
-      { name: 'apple-mobile-web-app-title', content: 'Memory Mirror' },
+      { name: 'apple-mobile-web-app-title', content: 'Ally AI' },
       { name: 'mobile-web-app-capable', content: 'yes' },
-      { name: 'theme-color', content: '#FF9933' }, // Match our primary color
-      { name: 'application-name', content: 'Memory Mirror' }
+      { name: 'theme-color', content: '#6a2c8e' }, // Match our primary color
+      { name: 'application-name', content: 'Ally AI' }
     ];
     
     metaTags.forEach(({ name, content }) => {
