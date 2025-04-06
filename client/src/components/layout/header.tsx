@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useProfileContext } from "@/contexts/profile-context";
+import allyLogo from "@/assets/ally-logo.png";
 
 export default function Header() {
   const [_, navigate] = useLocation();
@@ -18,8 +19,8 @@ export default function Header() {
     <header className="bg-white shadow-md px-6 py-4">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center cursor-pointer" onClick={() => navigate("/")}>
-          <i className="fas fa-brain text-primary text-3xl mr-3"></i>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-primary">Memory Mirror</h1>
+          <img src={allyLogo} alt="Ally Logo" className="h-10 w-10 mr-3" />
+          <h1 className="text-2xl sm:text-3xl font-semibold text-primary font-['Inter']">Ally</h1>
         </div>
         
         {selectedProfile ? (
