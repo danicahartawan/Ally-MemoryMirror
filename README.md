@@ -1,5 +1,5 @@
 # Ally-MemoryMirror
-What does Memory Mirror (orginally Ally) do?
+What does Memory Mirror (originally Ally) do?
 Memory Mirror is a neuroadaptive cognitive support tool that combines real-time brainwave tracking with adaptive, human-centered experiences to help users monitor cognitive health over time. Unlike traditional assessments that can feel clinical or overwhelming, Memory Mirror is designed to minimize stress, reduce friction, and foster a sense of continuity and support.
 
 Core Features: 
